@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -83,22 +84,40 @@ class NutritionKnowledgeBase:
                     items.append({**meta, "score": score})
             return sorted(items, key=lambda x: x["score"], reverse=True)
         except Exception as exc:
-            logger.warning("NutritionKB.search error: %s", exc)
+            logger.warning("nutrition_kb.search error: %s", exc)
             return []
 
     def multi_search(self, query: str, top_k_per_component: int = 3) -> list[dict]:
         components = _split_into_components(query)
         all_queries = list(dict.fromkeys(components + [query]))
-        logger.debug("multi_search queries: %s", all_queries)
 
         seen: dict[str, dict] = {}
         for q in all_queries:
-            for item in self.search(q, top_k=top_k_per_component):
+            hits = self.search(q, top_k=top_k_per_component)
+            logger.info(
+                "nutrition_kb.multi_search subquery=%s n_results=%d hits=%s",
+                json.dumps(q, ensure_ascii=False),
+                len(hits),
+                json.dumps(hits, ensure_ascii=False, default=str),
+            )
+            for item in hits:
                 name = item["name"]
                 if name not in seen or item["score"] > seen[name]["score"]:
                     seen[name] = item
 
-        return sorted(seen.values(), key=lambda x: x["score"], reverse=True)
+        merged = sorted(seen.values(), key=lambda x: x["score"], reverse=True)
+        logger.info(
+            "nutrition_kb.multi_search summary input_query=%s similarity_threshold=%s "
+            "top_k_per_component=%d components=%s expanded_queries=%s unique_by_name=%d merged_ranked=%s",
+            json.dumps(query, ensure_ascii=False),
+            self._threshold,
+            top_k_per_component,
+            json.dumps(components, ensure_ascii=False),
+            json.dumps(all_queries, ensure_ascii=False),
+            len(merged),
+            json.dumps(merged, ensure_ascii=False, default=str),
+        )
+        return merged
 
     def search_by_category(self, query: str, category: str, top_k: int = 5) -> list[dict]:
         if not query.strip():
@@ -117,7 +136,7 @@ class NutritionKnowledgeBase:
                     items.append({**meta, "score": score})
             return sorted(items, key=lambda x: x["score"], reverse=True)
         except Exception as exc:
-            logger.warning("NutritionKB.search_by_category error: %s", exc)
+            logger.warning("nutrition_kb.search_by_category error: %s", exc)
             return []
 
     def get_by_name(self, name: str) -> Optional[dict]:
@@ -167,9 +186,9 @@ class NutritionKnowledgeBase:
                     metadatas=metas[i:i + BATCH],
                     ids=ids[i:i + BATCH],
                 )
-            logger.info("NutritionKB: додано %d продуктів", len(docs))
+            logger.info("nutrition_kb.build inserted_count=%d", len(docs))
         else:
-            logger.info("NutritionKB: нових продуктів не знайдено")
+            logger.info("nutrition_kb.build inserted_count=0 (no new documents)")
 
         return len(docs)
 
@@ -191,7 +210,7 @@ class NutritionKnowledgeBase:
             }],
             ids=[pid],
         )
-        logger.info("NutritionKB: upserted '%s'", product["name"])
+        logger.info("nutrition_kb.add_product upsert name=%s", product["name"])
 
     def count(self) -> int:
         return self._collection.count()
@@ -226,9 +245,16 @@ def init_knowledge_base(
     api_key: Optional[str] = None,
 ) -> NutritionKnowledgeBase:
     kb = NutritionKnowledgeBase(persist_dir=persist_dir, api_key=api_key)
-    if kb.count() == 0:
-        added = kb.build()
-        logger.info("NutritionKB: ініціалізована з %d продуктів", added)
+    was_empty = kb.count() == 0
+    added = kb.build()
+    if was_empty:
+        logger.info("nutrition_kb.init was_empty products_seeded=%d", added)
+    elif added:
+        logger.info(
+            "nutrition_kb.init incremental_add=%d total_count=%d",
+            added,
+            kb.count(),
+        )
     else:
-        logger.info("NutritionKB: завантажена, %d продуктів", kb.count())
+        logger.info("nutrition_kb.init loaded total_count=%d", kb.count())
     return kb

@@ -103,8 +103,8 @@ BUILTIN_PRODUCTS: list[dict] = [
     # ═══════════════════════════════════════════════════════════════════════
     # ЗЛАКИ, КРУПИ ТА МАКАРОНИ
     # ═══════════════════════════════════════════════════════════════════════
-    {"name": "Гречка варена", "calories": 110, "protein": 4.0, "fat": 1.0, "carbs": 21.0,
-     "category": "grains", "aliases": "гречана каша, buckwheat, гречка"},
+    {"name": "Гречка варена", "calories": 90, "protein": 3.3, "fat": 0.8, "carbs": 17.4,
+     "category": "grains", "aliases": "гречана каша, buckwheat, гречка, гречка варена 200 гр"},
     {"name": "Гречка суха", "calories": 343, "protein": 13.0, "fat": 3.4, "carbs": 62.0,
      "category": "grains", "aliases": "гречана крупа суха"},
     {"name": "Рис білий варений", "calories": 130, "protein": 2.7, "fat": 0.3, "carbs": 28.0,
@@ -371,8 +371,14 @@ BUILTIN_PRODUCTS: list[dict] = [
      "category": "dishes", "aliases": "гороховий суп, pea soup"},
     {"name": "Суп харчо", "calories": 68, "protein": 4.5, "fat": 2.5, "carbs": 8.0,
      "category": "dishes", "aliases": "харчо, lamb soup"},
+    {"name": "Салат Цезар", "calories": 135, "protein": 13.0, "fat": 9.0, "carbs": 4.0,
+     "category": "dishes",
+     "aliases": "цезар, салат цезар, caesar salad, салат цезарь, класичний цезар, "
+                "ромен, салат ромен, пармезан у салаті, крутони, соус цезар"},
     {"name": "Салат Цезар з куркою", "calories": 190, "protein": 12.0, "fat": 14.0, "carbs": 6.0,
-     "category": "dishes", "aliases": "цезар, caesar salad"},
+     "category": "dishes",
+     "aliases": "цезар з куркою, курячий цезар, салат цезар з куркою, chicken caesar, "
+                "caesar with chicken"},
     {"name": "Салат Олів'є", "calories": 198, "protein": 6.5, "fat": 16.0, "carbs": 8.0,
      "category": "dishes", "aliases": "олів'є, салат з майонезом, оливье"},
     {"name": "Вінегрет", "calories": 70, "protein": 1.5, "fat": 3.5, "carbs": 8.0,

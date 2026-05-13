@@ -25,7 +25,10 @@ from keyboards.client_keyboards import (
     ration_date_keyboard,
 )
 from Content.texts import (
+    calories_ai_notes_block,
     calories_analysis_result,
+    calories_confidence_block,
+    calories_confidence_explanation_plain,
     calories_section_entry,
     msg_bad_date_format,
     msg_bad_date_value,
@@ -109,6 +112,36 @@ async def calories_got_text(message: types.Message, state: FSMContext):
     await _show_result(message, state, result, progress_message)
 
 
+def _print_analysis_console(result: NutritionResult) -> None:
+    """Дублює зміст результату аналізу в stdout (без HTML), як у Telegram."""
+    conf_icon = {"high": "✅", "medium": "🟡", "low": "🔴"}.get(result.confidence, "🟡")
+    conf_plain = calories_confidence_explanation_plain(result.confidence)
+    notes_body = (result.notes or "").strip() or "(немає приміток від моделі)"
+    block = [
+        "",
+        "=" * 44,
+        "Результат аналізу",
+        "",
+        f"{result.name}",
+        f"Калорії: ~{result.calories:.1f} ккал",
+        f"Білки: ~{result.protein:.1f} г",
+        f"Жири: ~{result.fat:.1f} г",
+        f"Вуглеводи: ~{result.carbs:.1f} г",
+        "",
+        "Додати до раціону?",
+        "",
+        f"confidence: {result.confidence} {conf_icon}",
+        conf_plain,
+        "",
+        f"Порція: {result.portion_g:.0f} г",
+        "",
+        "Примітки від моделі (AI):",
+        notes_body,
+        "=" * 44,
+    ]
+    print("\n".join(block), flush=True)
+
+
 async def _show_result(
     message: types.Message,
     state: FSMContext,
@@ -116,6 +149,7 @@ async def _show_result(
     target_message: types.Message | None = None,
 ):
     """Показати результат аналізу в одному інтерактивному повідомленні."""
+    _print_analysis_console(result)
     dish = result.as_dict()
     await state.update_data(pending_dish=dish)
     text = _render_result_text(
@@ -351,12 +385,16 @@ def _render_result_text(
     portion_g: float,
     notes: str,
 ) -> str:
-    confidence_icon = {"high": "✅", "medium": "🟡", "low": "🔴"}.get(confidence, "🟡")
-    notes_line = f"\n\n💬 <i>{notes}</i>" if notes else ""
+    confidence_icon = {"high": "✅", "medium": "🟡", "low": "🔴"}.get(
+        (confidence or "medium").lower(), "🟡"
+    )
     text = calories_analysis_result(name, calories, protein, fat, carbs)
-    text += f"\n{confidence_icon} Точність: <b>{confidence}</b>"
-    text += f"\n⚖️ Порція: <b>{portion_g:.0f} г</b>"
-    text += notes_line
+    text += "\n\n"
+    text += calories_confidence_block(confidence, confidence_icon)
+    text += f"\n\n⚖️ <b>Порція:</b> <code>{portion_g:.0f}</code> г"
+    text += "\n\n"
+    text += calories_ai_notes_block(notes)
+    text += "\n\n<b>Додати до раціону?</b>"
     return text
 
 

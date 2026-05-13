@@ -1,16 +1,31 @@
 import asyncio
 import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s:%(name)s:%(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+for _log_name in (
+    "aiogram",
+    "aiogram.dispatcher",
+    "aiogram.middlewares",
+):
+    logging.getLogger(_log_name).setLevel(logging.INFO)
+
+logging.getLogger("nutrify.update").setLevel(logging.INFO)
+logging.getLogger("aiogram.event").setLevel(logging.WARNING)
+
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from config import token
-
-
-logging.basicConfig(level=logging.INFO)
+from middlewares.update_user_log import UpdateUserLogMiddleware
 
 
 bot = Bot(token=token)
 storage = MemoryStorage()
 dp = Dispatcher(bot=bot, storage=storage)
+dp.update.outer_middleware(UpdateUserLogMiddleware())
 
 
 async def main():

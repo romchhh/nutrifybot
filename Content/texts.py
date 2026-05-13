@@ -97,16 +97,71 @@ def calories_ask_text() -> str:
     )
 
 
-def calories_analysis_result(name: str, kcal: int, p: float, f: float, c: float) -> str:
+def calories_analysis_result(name: str, kcal: float, p: float, f: float, c: float) -> str:
     safe_name = escape(name)
     return (
         "🔍 <b>Результат аналізу</b>\n\n"
         f"🍽 <b>{safe_name}</b>\n"
-        f"🔥 <b>Калорії:</b> ~<code>{kcal}</code> ккал\n"
-        f"🥩 <b>Білки:</b> ~<code>{p}</code> г\n"
-        f"🧈 <b>Жири:</b> ~<code>{f}</code> г\n"
-        f"🌾 <b>Вуглеводи:</b> ~<code>{c}</code> г\n\n"
-        "<b>Додати до раціону?</b>"
+        f"🔥 <b>Калорії:</b> ~<code>{kcal:.1f}</code> ккал\n"
+        f"🥩 <b>Білки:</b> ~<code>{p:.1f}</code> г\n"
+        f"🧈 <b>Жири:</b> ~<code>{f:.1f}</code> г\n"
+        f"🌾 <b>Вуглеводи:</b> ~<code>{c:.1f}</code> г"
+    )
+
+
+_CONFIDENCE_UK_LABELS = {
+    "high": "висока",
+    "medium": "середня",
+    "low": "низька",
+}
+
+_CONFIDENCE_EXPLANATIONS_UK = {
+    "high": (
+        "Модель впевнена в оцінці: вхідні дані достатньо конкретні, порція та склад "
+        "виглядають передбачувано; за наявності використано перевірені дані з бази знань."
+    ),
+    "medium": (
+        "Є помірна невизначеність: наприклад, розмір порції, спосіб приготування або частина "
+        "інгредієнтів описані нечітко — цифри орієнтовні, уточнення покращать точність."
+    ),
+    "low": (
+        "Оцінка дуже орієнтовна: у тексті мало конкретики (вага, склад) або слабкий збіг з базою — "
+        "КБЖУ можуть сильно відрізнятися від реальності; варто вказати грами та інгредієнти."
+    ),
+}
+
+
+def calories_confidence_explanation_plain(confidence: str) -> str:
+    """Коротке пояснення рівня confidence без HTML (наприклад, для stdout)."""
+    key = (confidence or "medium").strip().lower()
+    return _CONFIDENCE_EXPLANATIONS_UK.get(key, _CONFIDENCE_EXPLANATIONS_UK["medium"])
+
+
+def calories_confidence_block(confidence: str, icon: str) -> str:
+    """
+    Рядок точності (high | medium | low) + коротке пояснення в цитаті.
+    """
+    key = (confidence or "medium").strip().lower()
+    label = _CONFIDENCE_UK_LABELS.get(key, _CONFIDENCE_UK_LABELS["medium"])
+    expl = _CONFIDENCE_EXPLANATIONS_UK.get(key, _CONFIDENCE_EXPLANATIONS_UK["medium"])
+    return (
+        f"{icon} <b>Точність оцінки (confidence):</b> <code>{escape(key)}</code> "
+        f"(<i>{escape(label)}</i>)\n\n"
+        f"<blockquote>{escape(expl)}</blockquote>"
+    )
+
+
+def calories_ai_notes_block(notes: str) -> str:
+    """Блок приміток від моделі; якщо порожньо — короткий підказковий текст."""
+    body = (notes or "").strip()
+    if not body:
+        body = (
+            "Додай до прийому їжі овочі або салат для клітковини, пий воду. "
+            "Наступного разу вкажи вагу порції грамами — так легше тримати баланс КБЖУ протягом дня."
+        )
+    return (
+        "<b>Примітки від моделі (AI)</b>\n\n"
+        f"<i>{escape(body)}</i>"
     )
 
 
